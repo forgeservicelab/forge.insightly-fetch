@@ -10,7 +10,8 @@ from os import getenv
 import sys
 import getopt
 import requests
-
+import tarfile
+import time
 
 def fetch(url, key):
     if url and key is not "":
@@ -39,7 +40,7 @@ def help():
     Fetches data from Insightly in json format. Provide your insightly key as
     a parameter or have it stored in INSIGHTLY_KEY environment variable.
 
-    Usage: lyfetch.py [-k <insightly_key>] [-c] [-o] [-p] [-g] [-r] [-t] [-i] [-s] [-u]
+    Usage: lyfetch.py [-k <insightly_key>] [-c] [-o] [-p] [-g] [-r] [-t] [-i] [-s] [-u] [-a]
 
            -k <insightly_key>
            -c contacts
@@ -51,6 +52,7 @@ def help():
            -i pipelines
            -s pipeline stages
            -u opportunity reasons
+           -a archive everything at once 
 
            -h help
     """
@@ -58,48 +60,60 @@ def help():
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "hk:coapgrtisu")
+        opts, args = getopt.getopt(argv, "hk:coapgrtisua")
     except getopt.GEtoptError:
         help()
         sys.exit()
 
+    api = {}
+    api['-c'] = "https://api.insight.ly/v2.1/Contacts"
+    api['-o'] = "https://api.insight.ly/v2.1/Organisations"
+    api['-p'] = "https://api.insight.ly/v2.1/Projects"
+    api['-g'] = "https://api.insight.ly/v2.1/ProjectCategories"
+    api['-r'] = "https://api.insight.ly/v2.1/Opportunities"
+    api['-t'] = "https://api.insight.ly/v2.1/OpportunityCategories"
+    api['-i'] = "https://api.insight.ly/v2.1/Pipelines"
+    api['-s'] = "https://api.insight.ly/v2.1/PipelineStages"
+    api['-u'] = "https://api.insight.ly/v2.1/OpportunityStateReasons"
+
     key = ""
     url = ""
+    archive = False
     for opt, arg in opts:
         if opt == "-h":
             help()
             sys.exit()
         elif opt in ("-k", "--key"):
             key = arg
-        elif opt in ("-c", "--contacts"):
-            url = "https://api.insight.ly/v2.1/Contacts"
-        elif opt in ("-o", "--organisations"):
-            url = "https://api.insight.ly/v2.1/Organisations"
-        elif opt in ("-p", "--projects"):
-            url = "https://api.insight.ly/v2.1/Projects"
-        elif opt in ("-g", "--projectcategories"):
-            url = "https://api.insight.ly/v2.1/ProjectCategories"
-        elif opt in ("-r", "--opportunities"):
-            url = "https://api.insight.ly/v2.1/Opportunities"
-        elif opt in ("-t", "--opportunitycategories"):
-            url = "https://api.insight.ly/v2.1/OpportunityCategories"
-        elif opt in ("-i", "--pipelines"):
-            url = "https://api.insight.ly/v2.1/Pipelines"
-        elif opt in ("-s", "--pipelinestages"):
-            url = "https://api.insight.ly/v2.1/PipelineStages"
-        elif opt in ("-u", "--opportunitystatereason"):
-            url = "https://api.insight.ly/v2.1/OpportunityStateReasons"
-
+        elif opt in ("-a", "--archive"):
+            archive = True
+        for k, v in api.items():
+            if opt in (k):
+                url = v
+            
     if key is "":
         key = get_from_env_or_prompt('INSIGHTLY_KEY')
     if key is "":
         print "Error: Insightly key was not provided"
         sys.exit()
+    if archive == True:
+        today = time.strftime("%Y-%m-%dT%H:%M")
+        archfile = tarfile.open("insightlybackup_%s.tar.gz" % (today), "w|gz")
+        for k,v in api.items():
+            url = v
+            data = fetch(url, key)
+            fname = url.split("/")
+            fname = fname[4] + ".json"
+            f = open(fname, "w")
+            f.write("%s" % (data))
+            f.close()
+            archfile.add(fname, fname)
+        archfile.close()
+    else:
+        data = fetch(url, key)
+        if data:
+            print data
 
-    data = fetch(url, key)
-    if data:
-        print data
-    sys.exit()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
