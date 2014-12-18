@@ -101,7 +101,6 @@ def main(arg):
         for k,v in arg.items():
             for kk,vv in api.items():
                 if k==kk and v: # a given argument was found and matches api too
-                    print v, k, vv
                     data = fetch(vv, key)
                     if data:
                         print data
