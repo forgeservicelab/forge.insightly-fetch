@@ -1,11 +1,33 @@
 #!/usr/bin/python
 
-# Fetches bulk data from Insightly with provide API key
-#
+# lyfetch.py
 # Copyright 2014 DIGILE Ltd
 # Author: Pasi Kivikangas
 # License: TBD
 
+"""
+Fetches data from Insightly in json format. Provide your insightly key as
+a parameter or have it stored in INSIGHTLY_KEY environment variable.
+
+Usage: 
+  lyfetch.py [-hcopgrtisua] [INSIGHTLY_KEY]
+
+Options: 
+  -h  help.
+  -c  fetch contacts.
+  -o  fetch organisations.
+  -p  fetch projects.
+  -g  fetch project categories.
+  -r  fetch opportunities.
+  -t  fetch opportunity categories.
+  -i  fetch pipelines.
+  -s  fetch pipeline stages.
+  -u  fetch opportunity reasons.
+  -a  fetch and archive all into a tar file instead of stdout.
+
+"""
+
+from docopt import docopt
 from os import getenv
 import sys
 import getopt
@@ -34,37 +56,7 @@ def get_from_env_or_prompt(varname, echo=True):
             value = getpass('Have your Insightly API key stored in INSIGHTLY_KEY environment variable or enter the value: ')
     return value
 
-
-def help():
-    print """
-    Fetches data from Insightly in json format. Provide your insightly key as
-    a parameter or have it stored in INSIGHTLY_KEY environment variable.
-
-    Usage: lyfetch.py [-k <insightly_key>] [-c] [-o] [-p] [-g] [-r] [-t] [-i] [-s] [-u] [-a]
-
-           -k <insightly_key>
-           -c contacts
-           -o organisations
-           -p projects
-           -g project categories
-           -r opportunities
-           -t opportunity categories
-           -i pipelines
-           -s pipeline stages
-           -u opportunity reasons
-           -a archive everything at once 
-
-           -h help
-    """
-
-
-def main(argv):
-    try:
-        opts, args = getopt.getopt(argv, "hk:coapgrtisua")
-    except getopt.GEtoptError:
-        help()
-        sys.exit()
-
+def main(arg):
     api = {}
     api['-c'] = "https://api.insight.ly/v2.1/Contacts"
     api['-o'] = "https://api.insight.ly/v2.1/Organisations"
@@ -75,30 +67,25 @@ def main(argv):
     api['-i'] = "https://api.insight.ly/v2.1/Pipelines"
     api['-s'] = "https://api.insight.ly/v2.1/PipelineStages"
     api['-u'] = "https://api.insight.ly/v2.1/OpportunityStateReasons"
-
-    key = ""
-    url = ""
+    url = None
     archive = False
-    for opt, arg in opts:
-        if opt == "-h":
-            help()
-            sys.exit()
-        elif opt in ("-k", "--key"):
-            key = arg
-        elif opt in ("-a", "--archive"):
-            archive = True
-        for k, v in api.items():
-            if opt in (k):
-                url = v
-            
-    if key is "":
-        key = get_from_env_or_prompt('INSIGHTLY_KEY')
-    if key is "":
+
+    key = arg['INSIGHTLY_KEY'] or get_from_env_or_prompt("INSIGHTLY_KEY")  
+    if not key:
         print "Error: Insightly key was not provided"
-        sys.exit()
-    if archive == True:
+        sys.exit(1)
+    
+    # def writeToFile(url):
+    #     fname = url.split('/')[-1] + '.json'
+    #     f = open(fname, 'w')
+    #     f.write(fetch(url, key))
+    #     f.close()
+    #     return fname
+
+    if arg['-a']:
         today = time.strftime("%Y-%m-%dT%H:%M")
         archfile = tarfile.open("insightlybackup_%s.tar.gz" % (today), "w|gz")
+        # map(archfile.add, map(writeToFile, api.items()))
         for k,v in api.items():
             url = v
             data = fetch(url, key)
@@ -110,10 +97,18 @@ def main(argv):
             archfile.add(fname, fname)
         archfile.close()
     else:
-        data = fetch(url, key)
-        if data:
-            print data
-
+        #print map(lambda data: fetch(api[data], key), filter(lambda k: k in api.keys(), arg.keys()))
+        for k,v in arg.items():
+            for kk,vv in api.items():
+                if k==kk and v: # a given argument was found and matches api too
+                    print v, k, vv
+                    data = fetch(vv, key)
+                    if data:
+                        print data
+                    else:
+                        exit(1)
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    arg = docopt(__doc__)
+    main(arg)
+
