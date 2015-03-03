@@ -34,6 +34,7 @@ import getopt
 import requests
 import tarfile
 import time
+import json
 
 def fetch(url, key):
     if url and key is not "":
@@ -92,7 +93,7 @@ def main(arg):
             fname = url.split("/")
             fname = fname[4] + ".json"
             f = open(fname, "w")
-            f.write("%s" % (data))
+            f.write(json.dumps(data))
             f.close()
             archfile.add(fname, fname)
         archfile.close()
