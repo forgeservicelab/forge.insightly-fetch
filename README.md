@@ -19,3 +19,19 @@ Fetches data from Insightly in json format. Provide your insightly key as a para
 
            -h help
 ````
+
+
+License
+==========
+
+Copyright (c) 2015 DIGILE Ltd.
+This contribution has been created by FORGE Service Lab funding granted by
+Finnish Ministry of Transport and Communications.
+
+This contribution is released under the MIT license, and may bundle other
+OSS licensed components.
+
+Author
+==========
+
+Pasi Kivikangas, DIGILE Ltd.

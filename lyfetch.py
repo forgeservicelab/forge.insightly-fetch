@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 # lyfetch.py
-# Copyright 2014 DIGILE Ltd
+# Copyright (c) 2015 DIGILE Ltd
+# License: MIT
 # Author: Pasi Kivikangas
-# License: TBD
 
 """
 Fetches data from Insightly in json format. Provide your insightly key as
